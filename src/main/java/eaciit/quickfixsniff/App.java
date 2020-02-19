@@ -1,8 +1,12 @@
 package eaciit.quickfixsniff;
 import quickfix.*;
+
+import java.io.BufferedReader;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.util.concurrent.CountDownLatch;
 import org.slf4j.Logger;
+import java.util.*;
 import org.slf4j.LoggerFactory;
 /**
  * Hello world!
@@ -40,13 +44,35 @@ public class App
     public void stop() {
         shutdownLatch.countDown();
     }
+    public static Map<String,String> ReadConfig(FileReader fis)throws Exception{
+        int bufferSize = 8 * 1024;
+        HashMap<String,String> result = new HashMap<String,String>();
+        BufferedReader bis = new BufferedReader(fis);
+        String line = bis.readLine();
+        while(line!=null){
+            if(line.contains("=")){
+                String[] lineSplited = line.split("=");
+                if(lineSplited.length<2){
+                    line = bis.readLine();
+                    continue;
+                }
+                result.put(lineSplited[0],String.join("=",lineSplited[1]));
+            }
+            line = bis.readLine();
+        }
+        bis.close();
+        fis.close();
+        return result;
+    }
     public static void main( String[] args )throws Exception
     {
         if (args.length != 1) return;
         String fileName = args[0];
-        Application application = new SniffingApp();
+        Map<String,String> config = ReadConfig(new FileReader(fileName));
+        Application application = new SniffingApp(config);
+
         SessionSettings settings = new SessionSettings(new FileInputStream(fileName));
-        MessageStoreFactory storeFactory = new FileStoreFactory(settings);
+        MessageStoreFactory storeFactory = new JdbcStoreFactory(settings);
         LogFactory logFactory = new FileLogFactory(settings);
         MessageFactory messageFactory = new DefaultMessageFactory();
         Initiator initiator = new SocketInitiator
