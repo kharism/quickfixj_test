@@ -4,6 +4,7 @@ import quickfix.*;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileReader;
+import java.net.UnknownHostException;
 import java.util.concurrent.CountDownLatch;
 import org.slf4j.Logger;
 import java.util.*;
@@ -69,7 +70,16 @@ public class App
         if (args.length != 1) return;
         String fileName = args[0];
         Map<String,String> config = ReadConfig(new FileReader(fileName));
-        Application application = new SniffingApp(config);
+        Application application = null;
+        try{
+            application = new SniffingApp(config);
+        }catch(UnknownHostException ex){
+            System.out.println("Unknown Host Found");
+            System.exit(1);
+        }
+        if (application==null){
+            System.exit(1);
+        }
 
         SessionSettings settings = new SessionSettings(new FileInputStream(fileName));
         MessageStoreFactory storeFactory = new JdbcStoreFactory(settings);
